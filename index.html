@@ -19,7 +19,7 @@
     .card { background:white; border-radius:14px; padding:18px; margin:14px 0; box-shadow:0 2px 12px #0001; }
     input, textarea, select { width:100%; padding:12px; margin:8px 0 14px; border:1px solid #ccc; border-radius:8px; }
     textarea { min-height:110px; }
-    .hidden { display:none; }
+    .hidden { display:none !important; }
     .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; }
     .stat { background:#fafafa; border:1px solid var(--line); border-radius:12px; padding:14px; }
     .stat strong { font-size:30px; color:var(--red); }
@@ -32,6 +32,9 @@
     .pill { display:inline-block; border-radius:999px; padding:4px 8px; background:#ffecec; color:#b00000; font-size:12px; }
     .panel { border:1px solid #ddd; border-radius:12px; padding:12px; margin-top:12px; background:#fff; }
     .historyItem { border-left:4px solid var(--red); padding:8px 10px; margin:8px 0; background:#fafafa; }
+    .thanks { text-align:center; padding:28px 18px; }
+    .checkmark { width:74px; height:74px; border-radius:50%; background:#0a8f3c; color:white; display:flex; align-items:center; justify-content:center; font-size:42px; margin:0 auto 16px; }
+    .referenceBox { display:inline-block; background:#ffecec; border:1px solid #e60000; color:#b00000; padding:12px 16px; border-radius:10px; font-size:20px; font-weight:bold; margin:10px 0; word-break:break-word; }
     footer { text-align:center; font-size:12px; color:#666; padding:20px; }
   </style>
 </head>
@@ -42,7 +45,7 @@
     <button onclick="showPage('submitPage')">Submit</button>
     <button class="light" onclick="showPage('lookupPage')">Track Complaint</button>
     <button class="secondary" onclick="showPage('adminPage')">Admin</button>
-    <button class="light" onclick="showPage('reportPage')">Reports</button>
+    <button id="reportsBtn" class="light hidden" onclick="showPage('reportPage')">Reports</button>
   </nav>
 </header>
 
@@ -73,6 +76,19 @@
       <button type="submit">Submit</button>
     </form>
     <p id="submitMessage"></p>
+  </section>
+
+  <section id="thankYouPage" class="card hidden">
+    <div class="thanks">
+      <div class="checkmark">✓</div>
+      <h2>Thank You</h2>
+      <p>Your complaint/suggestion has been submitted successfully.</p>
+      <p>Please save your reference number:</p>
+      <div id="thankYouReference" class="referenceBox"></div>
+      <p class="small">You can use this reference number to track the status of your complaint later.</p>
+      <button onclick="startNewComplaint()">Submit Another</button>
+      <button class="light" onclick="goToTrackFromThanks()">Track Complaint</button>
+    </div>
   </section>
 
   <section id="lookupPage" class="card hidden">

@@ -28,11 +28,29 @@ const auth = getAuth(app);
 
 let complaintsCache = [];
 let currentAdmin = null;
+let lastSubmittedReference = "";
 
 window.showPage = function(id) {
-  ["submitPage","lookupPage","adminPage","reportPage"].forEach(p => document.getElementById(p).classList.add("hidden"));
+  if (id === "reportPage" && (!currentAdmin || !isAllowedAdmin(currentAdmin.email))) {
+    alert("Admin login required to view reports.");
+    return;
+  }
+
+  ["submitPage","thankYouPage","lookupPage","adminPage","reportPage"].forEach(p => document.getElementById(p).classList.add("hidden"));
   document.getElementById(id).classList.remove("hidden");
   if (id === "reportPage") loadComplaints();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+window.startNewComplaint = function() {
+  document.getElementById("submitMessage").textContent = "";
+  window.showPage("submitPage");
+};
+
+window.goToTrackFromThanks = function() {
+  window.showPage("lookupPage");
+  document.getElementById("lookupReference").value = lastSubmittedReference;
+  studentLookup();
 };
 
 document.getElementById("identityType").addEventListener("change", function() {
@@ -45,11 +63,16 @@ onAuthStateChanged(auth, async user => {
     document.getElementById("loggedInEmail").textContent = user.email;
     document.getElementById("adminLogin").classList.add("hidden");
     document.getElementById("adminDashboard").classList.remove("hidden");
+    document.getElementById("reportsBtn").classList.remove("hidden");
     await loadComplaints();
   } else {
     currentAdmin = null;
+    document.getElementById("reportsBtn").classList.add("hidden");
     document.getElementById("adminLogin").classList.remove("hidden");
     document.getElementById("adminDashboard").classList.add("hidden");
+    if (!document.getElementById("reportPage").classList.contains("hidden")) {
+      window.showPage("submitPage");
+    }
   }
 });
 
@@ -74,41 +97,44 @@ async function getNextReference() {
 document.getElementById("complaintForm").addEventListener("submit", async function(e) {
   e.preventDefault();
   const msg = document.getElementById("submitMessage");
-  msg.textContent = "";
-
-  const identityType = document.getElementById("identityType").value;
-  const reference = await getNextReference();
-  const createdText = new Date().toLocaleString();
-
-  const complaint = {
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-    createdAtText: createdText,
-    updatedAtText: createdText,
-    reference,
-    identityType,
-    studentName: identityType === "Named" ? document.getElementById("studentName").value.trim() : "Anonymous",
-    studentContact: identityType === "Named" ? document.getElementById("studentContact").value.trim() : "",
-    unitNumber: document.getElementById("unitNumber").value.trim(),
-    category: document.getElementById("category").value,
-    details: document.getElementById("details").value.trim(),
-    status: "New",
-    history: [{
-      timestamp: createdText,
-      user: "System",
-      action: "Complaint created",
-      detail: "Initial status: New"
-    }],
-    comments: []
-  };
+  msg.textContent = "Submitting...";
 
   try {
+    const identityType = document.getElementById("identityType").value;
+    const reference = await getNextReference();
+    const createdText = new Date().toLocaleString();
+
+    const complaint = {
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      createdAtText: createdText,
+      updatedAtText: createdText,
+      reference,
+      identityType,
+      studentName: identityType === "Named" ? document.getElementById("studentName").value.trim() : "Anonymous",
+      studentContact: identityType === "Named" ? document.getElementById("studentContact").value.trim() : "",
+      unitNumber: document.getElementById("unitNumber").value.trim(),
+      category: document.getElementById("category").value,
+      details: document.getElementById("details").value.trim(),
+      status: "New",
+      history: [{
+        timestamp: createdText,
+        user: "System",
+        action: "Complaint created",
+        detail: "Initial status: New"
+      }],
+      comments: []
+    };
+
     await addDoc(collection(db, "complaints"), complaint);
     await createEmailNotification(complaint);
-    msg.className = "ok";
-    msg.textContent = "Submitted successfully. Your reference number is: " + complaint.reference;
+
+    lastSubmittedReference = complaint.reference;
+    document.getElementById("thankYouReference").textContent = complaint.reference;
+    msg.textContent = "";
     this.reset();
     document.getElementById("namedFields").classList.add("hidden");
+    window.showPage("thankYouPage");
   } catch (err) {
     console.error(err);
     msg.className = "error";
@@ -196,7 +222,9 @@ window.adminLogin = async function() {
 };
 
 window.logout = async function() {
+  document.getElementById("reportsBtn").classList.add("hidden");
   await signOut(auth);
+  window.showPage("submitPage");
 };
 
 window.loadComplaints = async function() {
