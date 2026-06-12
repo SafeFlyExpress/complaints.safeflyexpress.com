@@ -18,7 +18,6 @@ const firebaseConfig = {
 };
 
 const ALLOWED_ADMIN_EMAILS = ["azzam@safeflyexpress.com"];
-const NOTIFICATION_EMAIL = "ma.sebaei@safeflyexpress.com";
 const CATEGORIES = ["Suggestion","Academic","Facilities","Safety","Staff Conduct","Transport","Other"];
 const STATUSES = ["New","In Progress","Resolved","Closed"];
 
@@ -127,7 +126,6 @@ document.getElementById("complaintForm").addEventListener("submit", async functi
     };
 
     await addDoc(collection(db, "complaints"), complaint);
-    await createEmailNotification(complaint);
 
     lastSubmittedReference = complaint.reference;
     document.getElementById("thankYouReference").textContent = complaint.reference;
@@ -141,34 +139,6 @@ document.getElementById("complaintForm").addEventListener("submit", async functi
     msg.textContent = "Could not submit. Check internet connection or Firebase rules.";
   }
 });
-
-async function createEmailNotification(c) {
-  try {
-    await addDoc(collection(db, "mail"), {
-      to: NOTIFICATION_EMAIL,
-      message: {
-        subject: "New Safe Fly Express Complaint: " + c.reference,
-        text:
-`New complaint/suggestion received.
-
-Reference: ${c.reference}
-Date: ${c.createdAtText}
-Type: ${c.identityType}
-Name: ${c.studentName}
-Contact: ${c.studentContact || "N/A"}
-Unit Number: ${c.unitNumber}
-Category: ${c.category}
-Status: ${c.status}
-
-Details:
-${c.details}`
-      },
-      createdAt: serverTimestamp()
-    });
-  } catch (err) {
-    console.warn("Email notification record not created. Enable Firebase Trigger Email extension and rules for mail collection.", err);
-  }
-}
 
 window.studentLookup = async function() {
   const ref = document.getElementById("lookupReference").value.trim().toUpperCase();
