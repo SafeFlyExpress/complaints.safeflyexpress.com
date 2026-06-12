@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Safe Fly Express Complaint Portal</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    :root { --brand:#14213d; --accent:#fca311; --bg:#f4f6f8; }
+    body { font-family: Arial, sans-serif; margin: 0; background: var(--bg); color: #222; }
+    header { background: var(--brand); color: white; padding: 18px; text-align: center; }
+    .logoWrap { display:flex; justify-content:center; align-items:center; gap:12px; flex-wrap:wrap; }
+    .logo { width:78px; height:78px; }
+    h1 { margin: 8px 0 4px; }
+    main { max-width: 1000px; margin: auto; padding: 18px; }
+    .card { background: white; padding: 18px; border-radius: 12px; margin: 14px 0; box-shadow: 0 2px 10px #0001; }
+    input, textarea, select { width: 100%; padding: 12px; margin: 8px 0 14px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+    textarea { min-height: 130px; }
+    button { background: var(--brand); color: white; border: 0; padding: 12px 16px; border-radius: 8px; cursor: pointer; margin: 4px 4px 4px 0; }
+    button.secondary { background: #6c757d; }
+    .hidden { display: none; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 9px; border-bottom: 1px solid #ddd; text-align: left; vertical-align: top; }
+    th { background:#f1f1f1; }
+    .small { color: #666; font-size: 13px; }
+    header .small { color:#ddd; }
+    .badge { display: inline-block; padding: 5px 9px; border-radius: 999px; background: #fff2cf; color:#222; margin:3px; }
+    nav { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:8px; }
+    .reportGrid { display:grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap:10px; margin:10px 0; }
+    .reportBox { background:#f8f9fa; border:1px solid #ddd; border-radius:10px; padding:12px; }
+    .reportBox strong { font-size:24px; color:var(--brand); }
+    .notice { background:#fff8e1; border-left:4px solid var(--accent); padding:10px; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logoWrap">
+      <svg class="logo" viewBox="0 0 100 100" role="img" aria-label="Safe Fly Express logo">
+        <circle cx="50" cy="50" r="47" fill="#ffffff"/>
+        <path d="M16 54 L83 25 L62 82 L50 59 L28 73 Z" fill="#fca311"/>
+        <path d="M50 59 L83 25 L43 51 Z" fill="#14213d"/>
+        <text x="50" y="94" text-anchor="middle" font-size="9" fill="#14213d" font-family="Arial" font-weight="bold">SAFEFLY</text>
+      </svg>
+      <div>
+        <h1>Safe Fly Express</h1>
+        <p class="small">Student Complaint & Suggestions Portal</p>
+      </div>
+    </div>
+    <nav>
+      <button onclick="showPage('complaint')">Submit</button>
+      <button onclick="showPage('admin')">Admin</button>
+      <button onclick="showPage('reports')">Reports</button>
+      <button onclick="showPage('qr')">QR / Sharing</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="complaint" class="card">
+      <h2>Lodge a Complaint or Suggestion</h2>
+      <form id="complaintForm">
+        <label>Submission Type</label>
+        <select id="identityType" required>
+          <option value="Anonymous">Anonymous</option>
+          <option value="Named">Named</option>
+        </select>
+
+        <div id="namedFields" class="hidden">
+          <label>Student Name</label>
+          <input id="studentName" placeholder="Enter student name" />
+          <label>Student Contact / Phone</label>
+          <input id="studentContact" placeholder="Optional" />
+        </div>
+
+        <label>Unit Number</label>
+        <input id="unitNumber" placeholder="Example: Unit 12 / Room 3 / Class A" required />
+
+        <label>Category</label>
+        <select id="category" required>
+          <option>Suggestion</option>
+          <option>Academic</option>
+          <option>Facilities</option>
+          <option>Safety</option>
+          <option>Staff Conduct</option>
+          <option>Transport</option>
+          <option>Other</option>
+        </select>
+
+        <label>Details</label>
+        <textarea id="details" placeholder="Describe the complaint or suggestion clearly..." required></textarea>
+
+        <button type="submit">Submit</button>
+      </form>
+      <p id="submitMsg"></p>
+      <p class="notice small">Offline note: submissions are saved on this device/browser. Export from Admin to share or back up records.</p>
+    </section>
+
+    <section id="admin" class="card hidden">
+      <h2>Admin Dashboard</h2>
+      <div id="loginBox">
+        <p class="small">Default PIN: <b>1234</b>.</p>
+        <input id="adminPin" type="password" placeholder="Enter admin PIN" />
+        <button onclick="login()">Login</button>
+      </div>
+
+      <div id="dashboard" class="hidden">
+        <p><span class="badge" id="countBadge">0 records</span></p>
+        <button onclick="exportComplaints()">Export Backup JSON</button>
+        <button onclick="exportCSV()">Export Excel CSV</button>
+        <button class="secondary" onclick="document.getElementById('importFile').click()">Import Backup JSON</button>
+        <input id="importFile" class="hidden" type="file" accept=".json" onchange="importComplaints(event)" />
+
+        <div style="overflow-x:auto;margin-top:12px">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th><th>Type</th><th>Name</th><th>Contact</th><th>Unit</th><th>Category</th><th>Details</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="complaintsTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="reports" class="card hidden">
+      <h2>Reports by Category</h2>
+      <p class="small">Reports are generated from records saved on this device/browser.</p>
+      <div id="reportSummary" class="reportGrid"></div>
+      <button onclick="exportCategoryReportCSV()">Export Category Report CSV</button>
+      <div style="overflow-x:auto;margin-top:12px">
+        <table>
+          <thead><tr><th>Category</th><th>Total</th><th>New</th><th>In Progress</th><th>Resolved</th><th>Closed</th></tr></thead>
+          <tbody id="categoryReportTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="qr" class="card hidden">
+      <h2>QR / Sharing</h2>
+      <p>When hosted online, create a QR code pointing to the website link.</p>
+      <p>For offline cellphone use, copy this folder to the phone and open <b>index.html</b>, then add it to the home screen.</p>
+      <p class="small">Offline complaints stay on the device where they were submitted. Use Export/Import to move complaints to the admin device.</p>
+    </section>
+  </main>
+
+<script>
+const ADMIN_PIN = "1234";
+const CATEGORIES = ["Suggestion","Academic","Facilities","Safety","Staff Conduct","Transport","Other"];
+const STATUSES = ["New","In Progress","Resolved","Closed"];
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js").catch(()=>{});
+}
+
+function showPage(id) {
+  ["complaint","admin","reports","qr"].forEach(p => document.getElementById(p).classList.add("hidden"));
+  document.getElementById(id).classList.remove("hidden");
+  renderComplaints();
+  renderReports();
+}
+
+document.getElementById("identityType").addEventListener("change", function() {
+  document.getElementById("namedFields").classList.toggle("hidden", this.value !== "Named");
+});
+
+function getComplaints() {
+  return JSON.parse(localStorage.getItem("complaints") || "[]");
+}
+
+function saveComplaints(items) {
+  localStorage.setItem("complaints", JSON.stringify(items));
+}
+
+document.getElementById("complaintForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  const complaint = {
+    id: Date.now(),
+    date: new Date().toLocaleString(),
+    identityType: document.getElementById("identityType").value,
+    studentName: document.getElementById("identityType").value === "Named" ? document.getElementById("studentName").value : "Anonymous",
+    studentContact: document.getElementById("studentContact").value,
+    unitNumber: document.getElementById("unitNumber").value,
+    category: document.getElementById("category").value,
+    details: document.getElementById("details").value,
+    status: "New"
+  };
+  const items = getComplaints();
+  items.push(complaint);
+  saveComplaints(items);
+  document.getElementById("submitMsg").innerText = "Submitted successfully.";
+  this.reset();
+  document.getElementById("namedFields").classList.add("hidden");
+  renderComplaints();
+  renderReports();
+});
+
+function login() {
+  if (document.getElementById("adminPin").value === ADMIN_PIN) {
+    document.getElementById("loginBox").classList.add("hidden");
+    document.getElementById("dashboard").classList.remove("hidden");
+    renderComplaints();
+    renderReports();
+  } else {
+    alert("Wrong PIN");
+  }
+}
+
+function renderComplaints() {
+  const table = document.getElementById("complaintsTable");
+  if (!table) return;
+  const items = getComplaints();
+  document.getElementById("countBadge").innerText = items.length + " records";
+  table.innerHTML = items.map((c, i) => `
+    <tr>
+      <td>${escapeHtml(c.date)}</td>
+      <td>${escapeHtml(c.identityType)}</td>
+      <td>${escapeHtml(c.studentName || "")}</td>
+      <td>${escapeHtml(c.studentContact || "")}</td>
+      <td>${escapeHtml(c.unitNumber)}</td>
+      <td>${escapeHtml(c.category)}</td>
+      <td>${escapeHtml(c.details)}</td>
+      <td>
+        <select onchange="updateStatus(${i}, this.value)">
+          ${STATUSES.map(s => `<option ${c.status===s?"selected":""}>${s}</option>`).join("")}
+        </select>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function renderReports() {
+  const items = getComplaints();
+  const report = {};
+  CATEGORIES.forEach(cat => {
+    report[cat] = {total:0};
+    STATUSES.forEach(s => report[cat][s] = 0);
+  });
+  items.forEach(c => {
+    if (!report[c.category]) {
+      report[c.category] = {total:0};
+      STATUSES.forEach(s => report[c.category][s] = 0);
+    }
+    report[c.category].total++;
+    report[c.category][c.status || "New"] = (report[c.category][c.status || "New"] || 0) + 1;
+  });
+
+  document.getElementById("reportSummary").innerHTML = Object.entries(report).map(([cat, r]) => `
+    <div class="reportBox"><span>${escapeHtml(cat)}</span><br><strong>${r.total}</strong></div>
+  `).join("");
+
+  document.getElementById("categoryReportTable").innerHTML = Object.entries(report).map(([cat, r]) => `
+    <tr>
+      <td>${escapeHtml(cat)}</td>
+      <td>${r.total}</td>
+      <td>${r["New"] || 0}</td>
+      <td>${r["In Progress"] || 0}</td>
+      <td>${r["Resolved"] || 0}</td>
+      <td>${r["Closed"] || 0}</td>
+    </tr>
+  `).join("");
+}
+
+function updateStatus(index, status) {
+  const items = getComplaints();
+  items[index].status = status;
+  saveComplaints(items);
+  renderReports();
+}
+
+function exportComplaints() {
+  downloadFile("safefly_complaints_backup.json", JSON.stringify(getComplaints(), null, 2), "application/json");
+}
+
+function exportCSV() {
+  const rows = [["Date","Type","Name","Contact","Unit Number","Category","Details","Status"]];
+  getComplaints().forEach(c => rows.push([c.date,c.identityType,c.studentName,c.studentContact,c.unitNumber,c.category,c.details,c.status]));
+  const csv = rows.map(r => r.map(v => `"${String(v || "").replaceAll('"','""')}"`).join(",")).join("\n");
+  downloadFile("safefly_complaints.csv", csv, "text/csv");
+}
+
+function exportCategoryReportCSV() {
+  const items = getComplaints();
+  const report = {};
+  CATEGORIES.forEach(cat => {
+    report[cat] = {total:0, New:0, "In Progress":0, Resolved:0, Closed:0};
+  });
+  items.forEach(c => {
+    if (!report[c.category]) report[c.category] = {total:0, New:0, "In Progress":0, Resolved:0, Closed:0};
+    report[c.category].total++;
+    report[c.category][c.status || "New"]++;
+  });
+  const rows = [["Category","Total","New","In Progress","Resolved","Closed"]];
+  Object.entries(report).forEach(([cat, r]) => rows.push([cat, r.total, r.New, r["In Progress"], r.Resolved, r.Closed]));
+  const csv = rows.map(r => r.map(v => `"${String(v || "").replaceAll('"','""')}"`).join(",")).join("\n");
+  downloadFile("safefly_category_report.csv", csv, "text/csv");
+}
+
+function importComplaints(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const imported = JSON.parse(reader.result);
+      const current = getComplaints();
+      saveComplaints(current.concat(imported));
+      renderComplaints();
+      renderReports();
+      alert("Imported successfully");
+    } catch(e) {
+      alert("Invalid file");
+    }
+  };
+  reader.readAsText(file);
+}
+
+function downloadFile(filename, content, type) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([content], {type}));
+  a.download = filename;
+  a.click();
+}
+
+function escapeHtml(text) {
+  return String(text || "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+
+renderReports();
+</script>
+</body>
+</html>
