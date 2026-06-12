@@ -27,10 +27,6 @@ const firebaseConfig = {
   measurementId: "G-SBM0G031PK"
 };
 
-/*
-  Add allowed admin emails here.
-  Use lowercase emails.
-*/
 const ALLOWED_ADMIN_EMAILS = [
   "azzam@safeflyexpress.com"
 ];
