@@ -8,7 +8,7 @@
   <style>
     :root { --red:#e60000; --black:#111; --bg:#f7f7f7; --line:#ddd; }
     * { box-sizing:border-box; }
-    body { margin:0; font-family: Arial, sans-serif; background:var(--bg); color:#222; }
+    body { margin:0; font-family:Arial,sans-serif; background:var(--bg); color:#222; }
     header { background:white; border-bottom:1px solid var(--line); padding:14px; text-align:center; position:sticky; top:0; z-index:2; }
     .logo { max-width:330px; width:86%; height:auto; }
     nav { margin-top:10px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
@@ -20,11 +20,11 @@
     input, textarea, select { width:100%; padding:12px; margin:8px 0 14px; border:1px solid #ccc; border-radius:8px; }
     textarea { min-height:130px; }
     .hidden { display:none; }
-    .grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); gap:10px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; }
     .stat { background:#fafafa; border:1px solid var(--line); border-radius:12px; padding:14px; }
     .stat strong { font-size:30px; color:var(--red); }
     table { width:100%; border-collapse:collapse; }
-    th, td { padding:9px; border-bottom:1px solid #ddd; text-align:left; vertical-align:top; }
+    th,td { padding:9px; border-bottom:1px solid #ddd; text-align:left; vertical-align:top; }
     th { background:#f3f3f3; }
     .small { color:#666; font-size:13px; }
     .ok { color:green; font-weight:600; }
@@ -87,13 +87,19 @@
 
   <section id="adminPage" class="card hidden">
     <h2>Admin Dashboard</h2>
+
     <div id="adminLogin">
-      <p class="small">Default admin PIN: <b>1234</b>. Change it in <b>app.js</b> later.</p>
-      <input id="adminPin" type="password" placeholder="Enter admin PIN" />
+      <p class="small">Admin access requires Firebase email/password login.</p>
+      <label>Admin Email</label>
+      <input id="adminEmail" type="email" placeholder="admin@safeflyexpress.com" />
+      <label>Password</label>
+      <input id="adminPassword" type="password" placeholder="Password" />
       <button onclick="adminLogin()">Login</button>
+      <p id="loginMessage"></p>
     </div>
 
     <div id="adminDashboard" class="hidden">
+      <p class="small">Logged in as <b id="loggedInEmail"></b> <button class="light" onclick="logout()">Logout</button></p>
       <div class="grid">
         <div class="stat"><span>Total</span><br><strong id="totalCount">0</strong></div>
         <div class="stat"><span>New</span><br><strong id="newCount">0</strong></div>
@@ -121,7 +127,7 @@
 
   <section id="reportPage" class="card hidden">
     <h2>Reports by Category</h2>
-    <p class="small">Reports are generated from the central Firebase database.</p>
+    <p class="small">You must be logged in as admin to view reports.</p>
     <div id="categoryCards" class="grid"></div>
     <p><button onclick="exportCategoryReportCSV()">Export Category Report CSV</button></p>
     <div style="overflow-x:auto">
@@ -136,7 +142,6 @@
 </main>
 
 <footer>Safe Fly Express Complaint Management System</footer>
-
 <script type="module" src="app.js"></script>
 </body>
 </html>

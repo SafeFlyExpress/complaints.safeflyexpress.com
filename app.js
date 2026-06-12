@@ -10,6 +10,12 @@ import {
   query,
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC77yW_lz1I5a-kZi4BCwLqU3FWes3-_xw",
@@ -21,13 +27,22 @@ const firebaseConfig = {
   measurementId: "G-SBM0G031PK"
 };
 
-const ADMIN_PIN = "1234";
+/*
+  Add allowed admin emails here.
+  Use lowercase emails.
+*/
+const ALLOWED_ADMIN_EMAILS = [
+  "azzam@safeflyexpress.com"
+];
+
 const CATEGORIES = ["Suggestion","Academic","Facilities","Safety","Staff Conduct","Transport","Other"];
 const STATUSES = ["New","In Progress","Resolved","Closed"];
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 let complaintsCache = [];
+let currentAdmin = null;
 
 window.showPage = function(id) {
   ["submitPage","adminPage","reportPage"].forEach(p => document.getElementById(p).classList.add("hidden"));
@@ -38,6 +53,24 @@ window.showPage = function(id) {
 document.getElementById("identityType").addEventListener("change", function() {
   document.getElementById("namedFields").classList.toggle("hidden", this.value !== "Named");
 });
+
+onAuthStateChanged(auth, async user => {
+  if (user && isAllowedAdmin(user.email)) {
+    currentAdmin = user;
+    document.getElementById("loggedInEmail").textContent = user.email;
+    document.getElementById("adminLogin").classList.add("hidden");
+    document.getElementById("adminDashboard").classList.remove("hidden");
+    await loadComplaints();
+  } else {
+    currentAdmin = null;
+    document.getElementById("adminLogin").classList.remove("hidden");
+    document.getElementById("adminDashboard").classList.add("hidden");
+  }
+});
+
+function isAllowedAdmin(email) {
+  return ALLOWED_ADMIN_EMAILS.includes(String(email || "").toLowerCase());
+}
 
 document.getElementById("complaintForm").addEventListener("submit", async function(e) {
   e.preventDefault();
@@ -67,21 +100,45 @@ document.getElementById("complaintForm").addEventListener("submit", async functi
   } catch (err) {
     console.error(err);
     msg.className = "error";
-    msg.textContent = "Could not submit. Check internet connection and Firebase rules.";
+    msg.textContent = "Could not submit. Check internet connection or Firebase rules.";
   }
 });
 
 window.adminLogin = async function() {
-  if (document.getElementById("adminPin").value !== ADMIN_PIN) {
-    alert("Wrong PIN");
+  const email = document.getElementById("adminEmail").value.trim().toLowerCase();
+  const password = document.getElementById("adminPassword").value;
+  const loginMessage = document.getElementById("loginMessage");
+
+  loginMessage.textContent = "";
+
+  if (!isAllowedAdmin(email)) {
+    loginMessage.className = "error";
+    loginMessage.textContent = "This email is not allowed as an admin.";
     return;
   }
-  document.getElementById("adminLogin").classList.add("hidden");
-  document.getElementById("adminDashboard").classList.remove("hidden");
-  await loadComplaints();
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    loginMessage.className = "ok";
+    loginMessage.textContent = "Logged in.";
+  } catch (err) {
+    console.error(err);
+    loginMessage.className = "error";
+    loginMessage.textContent = "Login failed. Check email/password and Firebase Authentication setup.";
+  }
+};
+
+window.logout = async function() {
+  await signOut(auth);
 };
 
 window.loadComplaints = async function() {
+  if (!currentAdmin || !isAllowedAdmin(currentAdmin.email)) {
+    document.getElementById("categoryCards").innerHTML = "<div class='stat'>Login as admin to view reports.</div>";
+    document.getElementById("categoryReportTable").innerHTML = "";
+    return;
+  }
+
   try {
     const q = query(collection(db, "complaints"), orderBy("createdAt", "desc"));
     const snap = await getDocs(q);
@@ -90,7 +147,7 @@ window.loadComplaints = async function() {
     renderReports();
   } catch (err) {
     console.error(err);
-    alert("Could not load complaints. Check Firebase rules/config.");
+    alert("Could not load complaints. Check Firebase rules and Authentication.");
   }
 };
 
@@ -123,6 +180,10 @@ function renderComplaints() {
 }
 
 window.updateStatus = async function(id, status) {
+  if (!currentAdmin) {
+    alert("Please login as admin first.");
+    return;
+  }
   try {
     await updateDoc(doc(db, "complaints", id), { status });
     const item = complaintsCache.find(c => c.id === id);
@@ -137,7 +198,6 @@ window.updateStatus = async function(id, status) {
 function buildCategoryReport() {
   const report = {};
   CATEGORIES.forEach(cat => report[cat] = { total:0, New:0, "In Progress":0, Resolved:0, Closed:0 });
-
   complaintsCache.forEach(c => {
     const cat = c.category || "Other";
     const status = c.status || "New";
@@ -145,17 +205,14 @@ function buildCategoryReport() {
     report[cat].total++;
     report[cat][status] = (report[cat][status] || 0) + 1;
   });
-
   return report;
 }
 
 function renderReports() {
   const report = buildCategoryReport();
-
   document.getElementById("categoryCards").innerHTML = Object.entries(report).map(([cat, r]) => `
     <div class="stat"><span>${escapeHtml(cat)}</span><br><strong>${r.total}</strong></div>
   `).join("");
-
   document.getElementById("categoryReportTable").innerHTML = Object.entries(report).map(([cat, r]) => `
     <tr>
       <td>${escapeHtml(cat)}</td>
@@ -169,6 +226,7 @@ function renderReports() {
 }
 
 window.exportCSV = function() {
+  if (!currentAdmin) return alert("Please login as admin first.");
   const rows = [["Date","Reference","Type","Name","Contact","Unit Number","Category","Details","Status"]];
   complaintsCache.forEach(c => rows.push([
     c.createdAtText || "", c.reference || c.id, c.identityType || "", c.studentName || "",
@@ -178,6 +236,7 @@ window.exportCSV = function() {
 };
 
 window.exportCategoryReportCSV = function() {
+  if (!currentAdmin) return alert("Please login as admin first.");
   const report = buildCategoryReport();
   const rows = [["Category","Total","New","In Progress","Resolved","Closed"]];
   Object.entries(report).forEach(([cat, r]) => rows.push([cat, r.total, r.New, r["In Progress"], r.Resolved, r.Closed]));
