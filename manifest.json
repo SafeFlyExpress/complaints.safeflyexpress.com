@@ -1,9 +1,9 @@
 {
   "name": "Safe Fly Express Complaint Portal",
-  "short_name": "SafeFly Complaints",
+  "short_name": "SafeFly Portal",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#f4f6f8",
-  "theme_color": "#14213d",
+  "theme_color": "#e60000",
+  "background_color": "#ffffff",
   "icons": []
 }
