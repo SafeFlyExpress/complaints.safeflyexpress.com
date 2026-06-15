@@ -17,7 +17,14 @@ const firebaseConfig = {
   measurementId: "G-SBM0G031PK"
 };
 
-const ALLOWED_ADMIN_EMAILS = ["azzam@safeflyexpress.com"];
+const ALLOWED_ADMIN_EMAILS = [
+  "seif@birdaviation.co.za",
+  "chenee.coetzer@safeflyexpress.com",
+  "viantha.chetty@safeflyexpress.com",
+  "ma.sebaei@safeflyexpress.com",
+  "omar@safeflyexpress.com",
+  "azzam@safeflyexpress.com"
+];
 const CATEGORIES = ["Suggestion","Academic","Facilities","Safety","Staff Conduct","Transport","Other"];
 const STATUSES = ["New","In Progress","Resolved","Closed"];
 
