@@ -112,7 +112,7 @@ document.getElementById("complaintForm").addEventListener("submit", async functi
       identityType,
       studentName: identityType === "Named" ? document.getElementById("studentName").value.trim() : "Anonymous",
       studentContact: identityType === "Named" ? document.getElementById("studentContact").value.trim() : "",
-      unitNumber: document.getElementById("unitNumber").value.trim(),
+      unitNumber: "",
       category: document.getElementById("category").value,
       details: document.getElementById("details").value.trim(),
       status: "New",
@@ -159,7 +159,7 @@ window.studentLookup = async function() {
       <h3>${escapeHtml(c.reference)}</h3>
       <p><b>Status:</b> ${escapeHtml(c.status)}</p>
       <p><b>Category:</b> ${escapeHtml(c.category)}</p>
-      <p><b>Unit Number:</b> ${escapeHtml(c.unitNumber)}</p>
+      
       <p><b>Submitted:</b> ${escapeHtml(c.createdAtText)}</p>
       <p><b>Last Updated:</b> ${escapeHtml(c.updatedAtText || c.createdAtText)}</p>
       <p class="small">Admin comments are internal and are not displayed here.</p>
@@ -220,7 +220,7 @@ function getFilteredComplaints() {
   const term = String(document.getElementById("adminSearch")?.value || "").toLowerCase().trim();
   if (!term) return complaintsCache;
   return complaintsCache.filter(c => [
-    c.reference, c.identityType, c.studentName, c.studentContact, c.unitNumber,
+    c.reference, c.identityType, c.studentName, c.studentContact, 
     c.category, c.details, c.status
   ].some(v => String(v || "").toLowerCase().includes(term)));
 }
@@ -240,7 +240,7 @@ window.renderComplaints = function() {
       <td><span class="pill">${escapeHtml(c.reference || c.id)}</span></td>
       <td>${escapeHtml(c.identityType)}</td>
       <td>${escapeHtml(c.studentName)}</td>
-      <td>${escapeHtml(c.unitNumber)}</td>
+      
       <td>${escapeHtml(c.category)}</td>
       <td>${escapeHtml(c.details).slice(0, 140)}</td>
       <td>
@@ -262,7 +262,7 @@ window.openComplaint = function(id) {
 
   box.innerHTML = `
     <h3>${escapeHtml(c.reference)}</h3>
-    <p><b>Status:</b> ${escapeHtml(c.status)} | <b>Category:</b> ${escapeHtml(c.category)} | <b>Unit:</b> ${escapeHtml(c.unitNumber)}</p>
+    <p><b>Status:</b> ${escapeHtml(c.status)} | <b>Category:</b> ${escapeHtml(c.category)}</p>
     <p><b>Submitted:</b> ${escapeHtml(c.createdAtText)}</p>
     <p><b>Type:</b> ${escapeHtml(c.identityType)} | <b>Name:</b> ${escapeHtml(c.studentName)} | <b>Contact:</b> ${escapeHtml(c.studentContact || "N/A")}</p>
     <p><b>Details:</b><br>${escapeHtml(c.details)}</p>
@@ -382,8 +382,8 @@ function renderReports() {
 
 window.exportCSV = function() {
   if (!currentAdmin) return alert("Please login as admin first.");
-  const rows = [["Date","Reference","Type","Name","Contact","Unit Number","Category","Details","Status","Last Updated"]];
-  complaintsCache.forEach(c => rows.push([c.createdAtText || "", c.reference || c.id, c.identityType || "", c.studentName || "", c.studentContact || "", c.unitNumber || "", c.category || "", c.details || "", c.status || "", c.updatedAtText || ""]));
+  const rows = [["Date","Reference","Type","Name","Contact","Category","Details","Status","Last Updated"]];
+  complaintsCache.forEach(c => rows.push([c.createdAtText || "", c.reference || c.id, c.identityType || "", c.studentName || "", c.studentContact || "",  c.category || "", c.details || "", c.status || "", c.updatedAtText || ""]));
   downloadCSV("safefly_complaints.csv", rows);
 };
 
