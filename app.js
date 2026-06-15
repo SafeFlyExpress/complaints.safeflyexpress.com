@@ -4,7 +4,13 @@ import {
   query, orderBy, where, limit, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 import {
-  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+  getAuth,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider
 } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 
 const firebaseConfig = {
@@ -23,7 +29,8 @@ const ALLOWED_ADMIN_EMAILS = [
   "viantha.chetty@safeflyexpress.com",
   "ma.sebaei@safeflyexpress.com",
   "omar@safeflyexpress.com",
-  "azzam@safeflyexpress.com"
+  "azzam@safeflyexpress.com",
+  "qsm@safeflyexpress.com"
 ];
 const CATEGORIES = ["Suggestion","Academic","Facilities","Safety","Staff Conduct","Transport","Other"];
 const STATUSES = ["New","In Progress","Resolved","Closed"];
@@ -195,6 +202,64 @@ window.adminLogin = async function() {
     console.error(err);
     loginMessage.className = "error";
     loginMessage.textContent = "Login failed. Check email/password.";
+  }
+};
+
+
+window.changeAdminPassword = async function() {
+  const msg = document.getElementById("passwordChangeMessage");
+  const currentPassword = document.getElementById("currentPassword").value;
+  const newPassword = document.getElementById("newPassword").value;
+  const confirmNewPassword = document.getElementById("confirmNewPassword").value;
+
+  msg.textContent = "";
+  msg.className = "";
+
+  if (!currentAdmin || !auth.currentUser) {
+    msg.className = "error";
+    msg.textContent = "Please login first.";
+    return;
+  }
+
+  if (!currentPassword || !newPassword || !confirmNewPassword) {
+    msg.className = "error";
+    msg.textContent = "Please complete all password fields.";
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    msg.className = "error";
+    msg.textContent = "New password must be at least 6 characters.";
+    return;
+  }
+
+  if (newPassword !== confirmNewPassword) {
+    msg.className = "error";
+    msg.textContent = "New passwords do not match.";
+    return;
+  }
+
+  try {
+    const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
+    await reauthenticateWithCredential(auth.currentUser, credential);
+    await updatePassword(auth.currentUser, newPassword);
+
+    document.getElementById("currentPassword").value = "";
+    document.getElementById("newPassword").value = "";
+    document.getElementById("confirmNewPassword").value = "";
+
+    msg.className = "ok";
+    msg.textContent = "Password changed successfully.";
+  } catch (err) {
+    console.error(err);
+    msg.className = "error";
+    if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
+      msg.textContent = "Current password is incorrect.";
+    } else if (err.code === "auth/weak-password") {
+      msg.textContent = "New password is too weak.";
+    } else {
+      msg.textContent = "Could not change password. Please login again and try.";
+    }
   }
 };
 

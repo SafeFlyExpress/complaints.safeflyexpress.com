@@ -111,6 +111,19 @@
     <div id="adminDashboard" class="hidden">
       <p class="small">Logged in as <b id="loggedInEmail"></b> <button class="light" onclick="logout()">Logout</button></p>
 
+      <div class="panel">
+        <h3>Change Password</h3>
+        <p class="small">Use this to change your own admin password.</p>
+        <label>Current Password</label>
+        <input id="currentPassword" type="password" placeholder="Enter current password" />
+        <label>New Password</label>
+        <input id="newPassword" type="password" placeholder="Enter new password" />
+        <label>Confirm New Password</label>
+        <input id="confirmNewPassword" type="password" placeholder="Confirm new password" />
+        <button class="secondary" onclick="changeAdminPassword()">Change Password</button>
+        <p id="passwordChangeMessage"></p>
+      </div>
+
       <div class="grid">
         <div class="stat"><span>Total</span><br><strong id="totalCount">0</strong></div>
         <div class="stat"><span>New</span><br><strong id="newCount">0</strong></div>
