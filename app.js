@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
 import {
-  getFirestore, collection, addDoc, getDocs, updateDoc, doc, serverTimestamp,
+  getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp,
   query, orderBy, where, limit, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 import {
@@ -32,6 +32,7 @@ const ALLOWED_ADMIN_EMAILS = [
   "azzam@safeflyexpress.com",
   "qsm@safeflyexpress.com"
 ];
+const SUPER_ADMIN_EMAIL = "azzam@safeflyexpress.com";
 const CATEGORIES = ["Suggestion","Academic","Facilities","Safety","Staff Conduct","Transport","Other"];
 const STATUSES = ["New","In Progress","Resolved","Closed"];
 
@@ -88,6 +89,10 @@ onAuthStateChanged(auth, async user => {
     }
   }
 });
+
+function isSuperAdmin(email) {
+  return String(email || "").toLowerCase() === SUPER_ADMIN_EMAIL;
+}
 
 function isAllowedAdmin(email) {
   return ALLOWED_ADMIN_EMAILS.includes(String(email || "").toLowerCase());
@@ -176,7 +181,13 @@ window.studentLookup = async function() {
       
       <p><b>Submitted:</b> ${escapeHtml(c.createdAtText)}</p>
       <p><b>Last Updated:</b> ${escapeHtml(c.updatedAtText || c.createdAtText)}</p>
-      <p class="small">Admin comments are internal and are not displayed here.</p>
+      <h4>Admin Comments</h4>
+      ${(c.comments || []).length ? (c.comments || []).map(x => `
+        <div class="historyItem">
+          <span class="small">${escapeHtml(x.timestamp || "")}</span><br>
+          ${escapeHtml(x.comment || "")}
+        </div>
+      `).join("") : "<p class='small'>No admin comments yet.</p>"}
     `;
   } catch (err) {
     console.error(err);
@@ -320,7 +331,8 @@ window.renderComplaints = function() {
           ${STATUSES.map(s => `<option ${c.status===s?"selected":""}>${s}</option>`).join("")}
         </select>
       </td>
-      <td><button class="light" onclick="openComplaint('${c.id}')">Open</button></td>
+      <td><button class="light" onclick="openComplaint('${c.id}')">Open</button>
+        ${isSuperAdmin(currentAdmin?.email) ? `<button style="background:#b00020;color:white" onclick="deleteComplaint('${c.id}', '${escapeHtml(c.reference || c.id)}')">Delete</button>` : ""}</td>
     </tr>
   `).join("");
 };
@@ -338,6 +350,8 @@ window.openComplaint = function(id) {
     <p><b>Submitted:</b> ${escapeHtml(c.createdAtText)}</p>
     <p><b>Type:</b> ${escapeHtml(c.identityType)} | <b>Name:</b> ${escapeHtml(c.studentName)} | <b>Contact:</b> ${escapeHtml(c.studentContact || "N/A")}</p>
     <p><b>Details:</b><br>${escapeHtml(c.details)}</p>
+
+    ${isSuperAdmin(currentAdmin?.email) ? `<p><button style="background:#b00020;color:white" onclick="deleteComplaint('${id}', '${escapeHtml(c.reference || c.id)}')">Delete Complaint</button></p>` : ""}
 
     <h4>Add Admin Comment</h4>
     <textarea id="comment_${id}" placeholder="Add internal admin comment..."></textarea>
@@ -360,6 +374,39 @@ window.openComplaint = function(id) {
       </div>
     `).join("") || "<p class='small'>No history yet.</p>"}
   `;
+};
+
+
+window.deleteComplaint = async function(id, reference) {
+  if (!currentAdmin || !isSuperAdmin(currentAdmin.email)) {
+    alert("Only the Super Admin can delete complaints.");
+    return;
+  }
+
+  const entered = prompt("This will permanently delete complaint " + reference + ". Type DELETE to confirm:");
+
+  if (entered !== "DELETE") {
+    alert("Delete cancelled.");
+    return;
+  }
+
+  try {
+    await deleteDoc(doc(db, "complaints", id));
+    complaintsCache = complaintsCache.filter(c => c.id !== id);
+
+    const detailsBox = document.getElementById("complaintDetails");
+    if (detailsBox) {
+      detailsBox.classList.add("hidden");
+      detailsBox.innerHTML = "";
+    }
+
+    renderComplaints();
+    renderReports();
+    alert("Complaint deleted successfully.");
+  } catch (err) {
+    console.error(err);
+    alert("Could not delete complaint. Check Firebase rules.");
+  }
 };
 
 window.addAdminComment = async function(id) {
