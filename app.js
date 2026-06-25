@@ -24,7 +24,7 @@ const firebaseConfig = {
 };
 
 const ALLOWED_ADMIN_EMAILS = [
-  "seif@birdaviation.co.za",
+  "sief@birdaviation.co.za",
   "chenee.coetzer@safeflyexpress.com",
   "viantha.chetty@safeflyexpress.com",
   "ma.sebaei@safeflyexpress.com",
